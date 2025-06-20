@@ -1,0 +1,110 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashMap;
+
+public class macbeth_censorship_tool extends JFrame {
+
+    private static JTextArea textArea;
+    private JButton chooseFileButton;
+    private File selectedFile; // To store the selected file
+
+    public macbeth_censorship_tool() {
+        // Initialize the GUI components
+        super("File Chooser Example");
+
+        textArea = new JTextArea(20, 40);
+        chooseFileButton = new JButton("Choose File");
+
+        // Set the layout
+        setLayout(new BorderLayout());
+        add(new JScrollPane(textArea), BorderLayout.CENTER);
+        add(chooseFileButton, BorderLayout.SOUTH);
+
+        // Add action listener to the button
+        chooseFileButton.addActionListener(new ChooseFileListener());
+
+        // Finalize frame setup
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        pack();
+        setVisible(true);
+    }
+
+    // Method to return the selected file
+    public File getSelectedFile() {
+        return selectedFile;
+    }
+
+    // Listener for "Choose File" button
+    private class ChooseFileListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            JFileChooser fileChooser = new JFileChooser();
+            int returnValue = fileChooser.showOpenDialog(macbeth_censorship_tool.this); // Show the file chooser dialog
+
+            if (returnValue == JFileChooser.APPROVE_OPTION) {
+                selectedFile = fileChooser.getSelectedFile();
+                textArea.append("Selected file: " + selectedFile.getAbsolutePath() + "\n");
+            } else {
+                textArea.append("No file selected.\n");
+            }
+        }
+    }
+    
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            FileChooserSample frame = new FileChooserSample();
+            
+            frame.chooseFileButton.addActionListener(e -> {
+                File selectedFile = frame.getSelectedFile();
+                if (selectedFile != null) {
+                    System.out.println("Selected file: " + selectedFile.getName());
+                    String filePath = selectedFile.getAbsolutePath(); // Use the absolute path
+
+                    String outputFilePath = "src/macbeth_censored.txt";
+                    HashMap<String, Integer> freqMap = new HashMap<>();
+
+                    try {
+                        // Read content of the selected file
+                        String content = new String(Files.readAllBytes(Paths.get(filePath)));
+                        
+                        // Process the content
+                        ArrayList<String> wordArr = new ArrayList<>();
+                        String[] words = content.split("\\W+");
+                        for (String word : words) {
+                            word = word.toLowerCase();
+                            wordArr.add(word);
+                            freqMap.put(word, freqMap.getOrDefault(word, 0) + 1);
+                        }
+
+                        textArea.append("Word frequency map: " + freqMap.toString() + "\n");
+
+                        // Write censored content to the output file
+                        StringBuilder censoredContent = new StringBuilder();
+                        for (String word : wordArr) {
+                            if (word.equals("macbeth")) {
+                                censoredContent.append("###### "); // Replace with censored text
+                            } else {
+                                censoredContent.append(word).append(" ");
+                            }
+                        }
+                        Files.write(Paths.get(outputFilePath), censoredContent.toString().getBytes());
+
+                        textArea.append("Censored content written to: " + outputFilePath + "\n");
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                } else {
+                    System.out.println("No file selected.");
+                }
+            });
+        });
+    }
+
+}
